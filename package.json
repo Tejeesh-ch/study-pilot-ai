@@ -1,0 +1,20 @@
+{
+  "name": "studypilot-ai",
+  "version": "1.0.0",
+  "description": "StudyPilot AI — The Adaptive Study Planner for College Students",
+  "private": true,
+  "scripts": {
+    "start": "python run.py",
+    "test": "python -m unittest backend/test_backend.py"
+  },
+  "keywords": [
+    "study-planner",
+    "adaptive-scheduling",
+    "rescue-my-day",
+    "pomodoro",
+    "ai-coach",
+    "hackathon"
+  ],
+  "author": "StudyPilot AI Team",
+  "license": "MIT"
+}
