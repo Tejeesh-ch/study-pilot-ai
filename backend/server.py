@@ -514,14 +514,29 @@ class StudyPilotHTTPHandler(http.server.BaseHTTPRequestHandler):
 
         # Sanitize path to prevent directory traversal
         clean_path = os.path.normpath(path.lstrip("/"))
-        file_path = os.path.join(FRONTEND_DIR, clean_path)
+        
+        # Check root directory first, then frontend/ subdirectory
+        candidates = [
+            os.path.join(BASE_DIR, clean_path),
+            os.path.join(FRONTEND_DIR, clean_path)
+        ]
 
-        # Check if file exists within FRONTEND_DIR
-        if not file_path.startswith(FRONTEND_DIR) or not os.path.isfile(file_path):
-            # Fallback to index.html for SPA client-side routing
-            file_path = os.path.join(FRONTEND_DIR, "index.html")
+        file_path = None
+        for cand in candidates:
+            if os.path.isfile(cand):
+                file_path = cand
+                break
 
-        if not os.path.isfile(file_path):
+        # If not found and it's a page route (no file extension), fall back to index.html for SPA
+        if not file_path:
+            _, ext = os.path.splitext(clean_path)
+            if not ext:
+                for idx_cand in [os.path.join(BASE_DIR, "index.html"), os.path.join(FRONTEND_DIR, "index.html")]:
+                    if os.path.isfile(idx_cand):
+                        file_path = idx_cand
+                        break
+
+        if not file_path or not os.path.isfile(file_path):
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b"404 Not Found")

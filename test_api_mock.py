@@ -143,5 +143,24 @@ class TestStudyPilotAPIRoutes(unittest.TestCase):
         self.assertIn("StudyPilot", content)
         self.assertIn("Rescue My Day", content)
 
+    def test_static_css_and_js(self):
+        # CSS must return valid CSS, not HTML '<'
+        css_handler = DummyHandler("GET", "/css/styles.css")
+        self.assertEqual(css_handler.response_code, 200)
+        css_content = css_handler.wfile.getvalue().decode('utf-8')
+        self.assertFalse(css_content.strip().startswith("<"), "CSS file must not start with HTML '<'")
+        self.assertIn("--primary-600", css_content)
+
+        # JS must return valid JavaScript, not HTML '<'
+        js_handler = DummyHandler("GET", "/js/api.js")
+        self.assertEqual(js_handler.response_code, 200)
+        js_content = js_handler.wfile.getvalue().decode('utf-8')
+        self.assertFalse(js_content.strip().startswith("<"), "JS file must not start with HTML '<'")
+        self.assertIn("const API", js_content)
+
+        # Non-existent asset must return 404, never fallback to index.html
+        missing_handler = DummyHandler("GET", "/js/non_existent_file.js")
+        self.assertEqual(missing_handler.response_code, 404)
+
 if __name__ == "__main__":
     unittest.main()
