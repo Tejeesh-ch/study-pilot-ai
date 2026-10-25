@@ -201,12 +201,33 @@ class StudyPilotHTTPHandler(http.server.BaseHTTPRequestHandler):
             return {}
 
     def get_route_path(self) -> Tuple[str, Dict[str, Any]]:
-        raw_path = self.headers.get('x-forwarded-uri') or self.headers.get('x-real-path') or self.path
-        parsed_url = urllib.parse.urlparse(raw_path)
+        # 1. Check Vercel matched path headers
+        for h in ['x-matched-path', 'x-vercel-matched-path', 'x-forwarded-uri', 'x-real-path']:
+            val = self.headers.get(h)
+            if val and not val.endswith('index.py') and not '/index.py?' in val:
+                parsed_val = urllib.parse.urlparse(val)
+                p = parsed_val.path
+                if len(p) > 1 and p.endswith("/"):
+                    p = p[:-1]
+                return p, urllib.parse.parse_qs(parsed_val.query)
+
+        # 2. Check self.path
+        parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
+        query_params = urllib.parse.parse_qs(parsed_url.query)
+
+        # 3. If routed through api/index.py, check path or 0 query parameter
+        if path.endswith("index.py") or path == "/api" or path == "/api/":
+            path_arg = query_params.pop("path", [None])[0] or query_params.pop("0", [None])[0]
+            if path_arg:
+                clean_arg = path_arg.lstrip("/")
+                path = f"/api/{clean_arg}"
+            else:
+                path = "/api/health"
+
         if len(path) > 1 and path.endswith("/"):
             path = path[:-1]
-        query_params = urllib.parse.parse_qs(parsed_url.query)
+
         return path, query_params
 
     def do_GET(self):

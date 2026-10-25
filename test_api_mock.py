@@ -67,6 +67,28 @@ class TestStudyPilotAPIRoutes(unittest.TestCase):
         res = json.loads(handler.wfile.getvalue().decode('utf-8'))
         self.assertGreaterEqual(len(res['tasks']), 5)
 
+    def test_vercel_rewrite_routing(self):
+        # Vercel rewrites to /api/index.py?path=tasks
+        handler = DummyHandler("GET", "/api/index.py?path=tasks")
+        self.assertEqual(handler.response_code, 200)
+        res = json.loads(handler.wfile.getvalue().decode('utf-8'))
+        self.assertGreaterEqual(len(res['tasks']), 5)
+
+        # Vercel rewrites with header x-matched-path
+        handler_header = DummyHandler("GET", "/api/index.py", headers={"x-matched-path": "/api/analytics"})
+        self.assertEqual(handler_header.response_code, 200)
+        res_analytics = json.loads(handler_header.wfile.getvalue().decode('utf-8'))
+        self.assertIn("completion_rate", res_analytics)
+
+    def test_favicons(self):
+        ico_handler = DummyHandler("GET", "/favicon.ico")
+        self.assertEqual(ico_handler.response_code, 200)
+        self.assertGreater(len(ico_handler.wfile.getvalue()), 100)
+
+        svg_handler = DummyHandler("GET", "/favicon.svg")
+        self.assertEqual(svg_handler.response_code, 200)
+        self.assertIn("<svg", svg_handler.wfile.getvalue().decode('utf-8'))
+
     def test_post_task_and_toggle(self):
         # Create
         task_data = json.dumps({
