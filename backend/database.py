@@ -6,13 +6,30 @@ Handles persistence for tasks, timetables, exams, focus sessions, and user setti
 import sqlite3
 import json
 import os
+import shutil
+import tempfile
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "studypilot.db")
+def get_db_path() -> str:
+    """Returns persistent database path locally, or writable /tmp path on Vercel."""
+    default_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "studypilot.db")
+    # If running on Vercel or read-only filesystem
+    if os.environ.get("VERCEL") or not os.access(os.path.dirname(default_path), os.W_OK):
+        tmp_dir = tempfile.gettempdir()
+        tmp_db = os.path.join(tmp_dir, "studypilot.db")
+        if not os.path.exists(tmp_db):
+            if os.path.exists(default_path):
+                try:
+                    shutil.copyfile(default_path, tmp_db)
+                except Exception:
+                    pass
+        return tmp_db
+    return default_path
 
 def get_db_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    db_file = get_db_path()
+    conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

@@ -200,13 +200,20 @@ class StudyPilotHTTPHandler(http.server.BaseHTTPRequestHandler):
         except Exception:
             return {}
 
-    def do_GET(self):
-        parsed_url = urllib.parse.urlparse(self.path)
+    def get_route_path(self) -> Tuple[str, Dict[str, Any]]:
+        raw_path = self.headers.get('x-forwarded-uri') or self.headers.get('x-real-path') or self.path
+        parsed_url = urllib.parse.urlparse(raw_path)
         path = parsed_url.path
+        if len(path) > 1 and path.endswith("/"):
+            path = path[:-1]
         query_params = urllib.parse.parse_qs(parsed_url.query)
+        return path, query_params
+
+    def do_GET(self):
+        path, query_params = self.get_route_path()
 
         # API Routes
-        if path == "/api/health":
+        if path in ["/api", "/api/health", "/api/index.py", "/api/index"]:
             self.send_json({"status": "healthy", "service": "StudyPilot AI", "time": datetime.now().isoformat()})
             return
 
@@ -276,8 +283,7 @@ class StudyPilotHTTPHandler(http.server.BaseHTTPRequestHandler):
         self.serve_static_file(path)
 
     def do_POST(self):
-        parsed_url = urllib.parse.urlparse(self.path)
-        path = parsed_url.path
+        path, _ = self.get_route_path()
         body = self.parse_body()
 
         if path == "/api/tasks":
@@ -394,8 +400,7 @@ class StudyPilotHTTPHandler(http.server.BaseHTTPRequestHandler):
         self.send_json({"error": "Not Found"}, status=404)
 
     def do_PUT(self):
-        parsed_url = urllib.parse.urlparse(self.path)
-        path = parsed_url.path
+        path, _ = self.get_route_path()
         body = self.parse_body()
 
         if path.startswith("/api/tasks/"):
@@ -425,8 +430,7 @@ class StudyPilotHTTPHandler(http.server.BaseHTTPRequestHandler):
         self.send_json({"error": "Not Found"}, status=404)
 
     def do_PATCH(self):
-        parsed_url = urllib.parse.urlparse(self.path)
-        path = parsed_url.path
+        path, _ = self.get_route_path()
         body = self.parse_body()
 
         if path.startswith("/api/tasks/") and path.endswith("/toggle"):
@@ -482,8 +486,7 @@ class StudyPilotHTTPHandler(http.server.BaseHTTPRequestHandler):
         self.send_json({"error": "Not Found"}, status=404)
 
     def do_DELETE(self):
-        parsed_url = urllib.parse.urlparse(self.path)
-        path = parsed_url.path
+        path, _ = self.get_route_path()
 
         if path.startswith("/api/tasks/"):
             try:

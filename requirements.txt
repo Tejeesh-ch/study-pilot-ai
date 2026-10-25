@@ -1,0 +1,3 @@
+# StudyPilot AI - Dependencies
+# This project uses the Python standard library (sqlite3, http.server, urllib, json)
+# No external package installations required for deployment.

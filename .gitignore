@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+.env.local
+
+# Vercel
+.vercel/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
